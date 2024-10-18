@@ -1,94 +1,32 @@
-docker-compose.yml:
-~~~
-services:
-  # nginx
-  web:
-    container_name: web
-    image: nginx:latest
-    ports:
-      - '8080:80'
-    links:
-      - 'php'      
-    volumes:
-      - ./src:/var/www/html
-      - ./default.conf:/etc/nginx/conf.d/default.conf
-    depends_on:
-      - php
+# Arquitectura MVC
 
-  # PHP
-  php:
-    container_name: php
-    build:
-      dockerfile: Dockerfile-php
-      context: .
-    volumes:
-      - ./src:/var/www/html
-    depends_on:
-      - mariadb
+### Pregunta 1: ¿Qué camino sigue el código cuando el usuario accede por primera vez a `index.php`?
+**Descripción**: Explica qué ocurre desde que el usuario carga `index.php` hasta que se muestra algo en pantalla. Incluye cómo intervienen el controlador, las vistas y el modelo, si es necesario.
 
-  # MariaDB Service
-  mariadb:
-    container_name: db
-    image: mariadb:10.9
-    ports:
-      - '8306:3306'    
-    environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: mydatabase
-    volumes:
-      - './mysqldata:/var/lib/mysql'
+RESPUESTA
 
-  # Adminer
-  adminer:
-    image: adminer:latest
-    container_name: adminer
-    environment:
-      ADMINER_DEFAULT_SERVER: db
-    restart: always
-    ports:
-      - 7777:8080  
+Cuando el usuario accede por primera vez a "index.php" se define la variable "BASE_PATH" donde se almacenara la ruta completa del directorio.
 
-# Volumes
-volumes:
-  mysqldata:
-~~~
-Dockerfile-php:
-~~~
-FROM php:8.1-fpm
+Despues se incluira el archivo "/controllers/UserControllers.php" que esta en la ruta especificada en "BASE_PATH".
 
-# Installing dependencies for the PHP modules
-RUN apt-get update && \
-    apt-get install -y zip curl libcurl3-dev libzip-dev libpng-dev libonig-dev libxml2-dev
-    # libonig-dev is needed for oniguruma which is needed for mbstring
+Por ultimo crea una instancia de "UserController" y llama al método "showForm()" para mostrar un formulario.
 
-# Installing additional PHP modules
-RUN docker-php-ext-install curl gd mbstring mysqli pdo pdo_mysql xml
 
-# Install Composer so it's available
-RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
-~~~
-default.conf:
-~~~
-server {
-    listen 80;
-    listen [::]:80;    
-    
-    index index.php index.html;
-    server_name localhost;
-    
-    error_log  /var/log/nginx/error.log;
-    access_log /var/log/nginx/access.log;
-    
-    root /var/www/html;
-    
-    location ~ \.php$ {
-        try_files $uri =404;
-        fastcgi_split_path_info ^(.+\.php)(/.+)$;
-        fastcgi_pass php:9000;
-        fastcgi_index index.php;
-        include fastcgi_params;
-        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
-        fastcgi_param PATH_INFO $fastcgi_path_info;
-    }
-}
-~~~
+### Pregunta 2: ¿Qué camino sigue el código cuando el usuario introduce datos en el formulario?
+**Descripción**: Detalla el proceso desde que el usuario envía el formulario hasta que se guarda la información y se muestra una respuesta en pantalla.
+
+> **Nota:** Al crear nuevas vistas, añade alguna forma de navegar entre ellas de modo que el usuario pueda acceder a todas las vistas sin tener que modificar la URL directamente.
+
+RESPUESTA
+
+Cuando el usuario completa el formulario en "userForm.php" y presiona "Create User", los datos se envían a "saveUser.php". El archivo carga el controlador "UserController" y llama al método "saveUser()", donde  obtiene el nombre del usuario del formulario y se crea un objeto "User". Despues, se llama al método "save()" del objeto, que inserta el nombre en la base de datos. Si se inserta correctamente, se carga "userSuccess.php" y se mostrara un mensaje de confirmacion.
+
+### Ejercicio 1: Mostrar Todos los Usuarios
+**Descripción**: Extiende la funcionalidad de la aplicación para que se muestre una lista de todos los usuarios que están en la base de datos.
+- Añadir un nuevo método en el controlador `UserController` llamado `getAllUsers()`.
+- Crear una nueva vista `showUsers.php` para mostrar una tabla con los nombres de los usuarios.
+
+### Ejercicio 2: Eliminar Usuario
+**Descripción**: Implementa la funcionalidad para eliminar un usuario de la base de datos.
+- Crear un método `deleteUser()` en `UserController`.
+- Crear una acción en `showUsers.php` que permita eliminar usuarios, mostrando un botón "Eliminar" al lado de cada nombre en la lista de usuarios.
